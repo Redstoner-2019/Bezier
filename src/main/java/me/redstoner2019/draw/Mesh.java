@@ -7,6 +7,10 @@ public class Mesh implements Cloneable{
     private List<Triangle> tris = new ArrayList<>();
     private Vertex2D vPos = new Vertex2D();
     private double scale = 1;
+    private double minX;
+    private double minY;
+    private double maxX;
+    private double maxY;
 
     public Mesh(List<Triangle> tris, Vertex2D vPos) {
         this.tris = tris;
@@ -37,9 +41,11 @@ public class Mesh implements Cloneable{
     }
     public void addTriangle(Triangle t){
         tris.add(t);
+        recalculate();
     }
     public void removeTriangle(Triangle t){
         tris.remove(t);
+        recalculate();
     }
 
     public List<Triangle> getTris() {
@@ -52,6 +58,25 @@ public class Mesh implements Cloneable{
             verticies.addAll(t.getVerticies());
         }
         return verticies;
+    }
+
+    public void recalculate(){
+        for(Triangle t : tris){
+            for(Vertex2D v : t.getVerticies()){
+                minX = Math.min(minX,v.getX());
+                minY = Math.min(minY,v.getY());
+                maxX = Math.max(maxX,v.getX());
+                maxY = Math.max(maxY,v.getY());
+            }
+        }
+    }
+
+    public double getWidth() {
+        return Math.abs(minX-maxX);
+    }
+
+    public double getHeight() {
+        return Math.abs(minY-maxY);
     }
 
     @Override

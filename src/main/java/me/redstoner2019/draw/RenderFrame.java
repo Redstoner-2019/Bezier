@@ -1,5 +1,7 @@
 package me.redstoner2019.draw;
 
+import me.redstoner2019.Main;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +13,7 @@ import java.util.List;
 
 public class RenderFrame {
 
-    private JFrame frame = new JFrame();
+    public JFrame frame = new JFrame();
 
     public RenderFrame(MeshProvider provider){
         frame.setSize(1280,720);
@@ -27,9 +29,9 @@ public class RenderFrame {
         long lastUpdate = System.currentTimeMillis()-900;
         int frames = 0;
 
-        List<Mesh> meshes = provider.getMeshes();
-
         while (true) {
+            List<Mesh> meshes = provider.getMeshes();
+
             BufferedImage image = new BufferedImage(frame.getWidth(),frame.getHeight(),1);
             Graphics2D g = image.createGraphics();
 
@@ -60,21 +62,27 @@ public class RenderFrame {
                     Vertex2D b = t.getvB().Scale(m.getScale()).Add(m.getvPos());
                     Vertex2D c = t.getvC().Scale(m.getScale()).Add(m.getvPos());
 
-                    /*g.drawLine(toScreenSpaceWidth(a),toScreenSpaceHeight(a),toScreenSpaceWidth(b),toScreenSpaceHeight(b));
-                    g.drawLine(toScreenSpaceWidth(b),toScreenSpaceHeight(b),toScreenSpaceWidth(c),toScreenSpaceHeight(c));
-                    g.drawLine(toScreenSpaceWidth(c),toScreenSpaceHeight(c),toScreenSpaceWidth(a),toScreenSpaceHeight(a));*/
+                    boolean fill = false;
 
-                    Path2D triangle = new Path2D.Float();
-                    triangle.moveTo(toScreenSpaceWidth(a),toScreenSpaceHeight(a)); // First point
-                    triangle.lineTo(toScreenSpaceWidth(b),toScreenSpaceHeight(b)); // Second point
-                    triangle.lineTo(toScreenSpaceWidth(c),toScreenSpaceHeight(c)); // Third point
-                    triangle.closePath(); // Close the path to connect the last point to the first
+                    if(fill){
+                        Path2D triangle = new Path2D.Float();
+                        triangle.moveTo(toScreenSpaceWidth(a),toScreenSpaceHeight(a)); // First point
+                        triangle.lineTo(toScreenSpaceWidth(b),toScreenSpaceHeight(b)); // Second point
+                        triangle.lineTo(toScreenSpaceWidth(c),toScreenSpaceHeight(c)); // Third point
+                        triangle.closePath(); // Close the path to connect the last point to the first
 
-                    g.fill(triangle);
+                        g.fill(triangle);
 
-                    g.setPaint(Color.WHITE);
+                        g.setPaint(Color.WHITE);
 
-                    g.draw(triangle);
+                        g.draw(triangle);
+                    } else {
+                        g.setPaint(Color.WHITE);
+
+                        g.drawLine(toScreenSpaceWidth(a),toScreenSpaceHeight(a),toScreenSpaceWidth(b),toScreenSpaceHeight(b));
+                        g.drawLine(toScreenSpaceWidth(b),toScreenSpaceHeight(b),toScreenSpaceWidth(c),toScreenSpaceHeight(c));
+                        g.drawLine(toScreenSpaceWidth(c),toScreenSpaceHeight(c),toScreenSpaceWidth(a),toScreenSpaceHeight(a));
+                    }
                 }
             }
 
@@ -83,6 +91,7 @@ public class RenderFrame {
             if(System.currentTimeMillis() - lastUpdate >= 1000){
                 lastUpdate = System.currentTimeMillis();
                 frame.setTitle(frames + " FPS");
+                Main.title = frame.getTitle();
                 frames = 0;
             }
             frames++;

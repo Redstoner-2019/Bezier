@@ -7,6 +7,7 @@ import java.util.List;
 
 public class Main {
     public static RenderFrame renderFrame;
+    public static String title = "";
     public static void main(String[] args) {
 
         //System.out.println(Vertex2D.between(new Vertex2D(-1,-1),new Vertex2D(1,1),.5));
@@ -14,13 +15,15 @@ public class Main {
 
         //if(true) return;
 
-        final int[] resolution = {7};
+        //Mesh gly = TTFReader.getMeshForChar('A');
+
+        final int[] resolution = {50};
 
         renderFrame = new RenderFrame(new MeshProvider() {
             @Override
             public List<Mesh> getMeshes() {
                 List<Mesh> meshes = new ArrayList<>();
-                {
+                /*{
                     Mesh m = new Mesh();
                     Triangle triangle = new Triangle(new Vertex2D(-1, -1), new Vertex2D(1, -1), new Vertex2D(1, 1));
                     //m.addTriangle(triangle);
@@ -47,9 +50,38 @@ public class Main {
                     }
                     m.setScale(.5);
 
-                    meshes.add(m);
+                    //meshes.add(m);
                 }
 
+                meshes.add(gly);*/
+
+                double x = -0.99;
+                double y = 0;
+
+                title = "I don't have any hobbies renderer program made by redstoner-2019 why am I writing this much, I don't care, it's not my program. My day was like, I had 8 hours of school today and we had SAWATZKI, who made me really tired, I have to stop now otherwise lukas will kill me bye.";
+                title = "ABC abc";
+
+                int screenHeight = 720;
+
+                double scale = 1.0 / screenHeight;
+
+                for(char c : title.toCharArray()){
+                    if(c == ' '){
+                        x+=.1 * scale;
+                        continue;
+                    }
+                    Glyph g = TTFReader.getMeshForChar(c);
+                    Mesh m = g.getMesh().clone();
+                    m.setScale(scale);
+                    m.setvPos(new Vertex2D(x,y));
+                    x+=g.getWidth() * m.getScale() + (0.15 * m.getScale());
+                    meshes.add(m);
+
+                    if(x >= 0.9){
+                        x = -0.99;
+                        y+= m.getScale() * 2;
+                    }
+                }
                 return meshes;
             }
         });

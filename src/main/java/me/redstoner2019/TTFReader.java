@@ -1,60 +1,109 @@
 package me.redstoner2019;
 
+import me.redstoner2019.draw.Glyph;
+import me.redstoner2019.draw.Mesh;
+import me.redstoner2019.draw.Triangle;
+import me.redstoner2019.draw.Vertex2D;
+
+import java.awt.*;
+import java.awt.font.FontRenderContext;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.io.InputStream;
+
+import java.awt.geom.GeneralPath;
+import java.awt.geom.PathIterator;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class TTFReader {
-    public static void main(String[] args) throws IOException {
-        FileInputStream fis = new FileInputStream("C:\\Users\\Redstoner_2019\\Projects\\MeshRenderer\\src\\main\\resources\\Arial.ttf");
 
-        // Read the TrueType font file header
-        byte[] header = new byte[12];
-        fis.read(header);
+    public static String charString = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:;-_<>!\"§$%&/()=?";
+    public static HashMap<Character, Glyph> charMeshes = new HashMap<>();
 
-        // Parse the header
-        int sfntVersion = ByteBuffer.wrap(header).getInt(0);
-        int numTables = ByteBuffer.wrap(header).getShort(4);
-        int searchRange = ByteBuffer.wrap(header).getShort(6);
-        int entrySelector = ByteBuffer.wrap(header).getShort(8);
-        int rangeShift = ByteBuffer.wrap(header).getShort(10);
+    public static Glyph getMeshForChar(char c) {
 
-        // Iterate over the tables
-        for (int i = 0; i < numTables; i++) {
-            byte[] tableHeader = new byte[16];
-            fis.read(tableHeader);
-
-            // Parse the table header
-            int tag = ByteBuffer.wrap(tableHeader).getInt(0);
-            int checksum = ByteBuffer.wrap(tableHeader).getInt(4);
-            int offset = ByteBuffer.wrap(tableHeader).getInt(8);
-            int length = ByteBuffer.wrap(tableHeader).getInt(12);
-
-            // Check if this is the glyf table
-            if (tag == 0x676C7966) { // 'glyf'
-                // Read the glyf table data
-                byte[] glyfData = new byte[length];
-                fis.read(glyfData);
-
-                // Iterate over the glyphs
-                for (int j = 0; j < glyfData.length; j += 2) {
-                    int glyphIndex = ByteBuffer.wrap(glyfData).getShort(j);
-
-                    // Read the glyph data
-                    byte[] glyphData = new byte[glyfData.length - j];
-                    fis.read(glyphData);
-
-                    // Parse the glyph outline data
-                    // (this is where you'll need to implement the Bezier curve parsing)
-                    parseGlyphOutline(glyphData);
-                }
-            }
+        if(charMeshes.containsKey(c)){
+            return charMeshes.get(c).clone();
         }
-    }
 
-    private static void parseGlyphOutline(byte[] glyphData) {
-        // TO DO: implement Bezier curve parsing
-        System.out.println("Glyph outline data: " + Arrays.toString(glyphData));
+        Mesh m = new Mesh();
+
+        double width = 0;
+        double height = 0;
+
+        try {
+            InputStream inputStream = new FileInputStream("src\\main\\resources\\Arial.ttf");
+            Font font = Font.createFont(Font.TRUETYPE_FONT, inputStream);
+
+            font = new Font("Bahnschrift", Font.PLAIN,300);
+            font = new Font("Arial", Font.PLAIN,300);
+
+            GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
+
+            FontRenderContext fontRenderContext = new FontRenderContext(null, true, true);
+
+            Shape shape = font.createGlyphVector(fontRenderContext, c + "").getOutline();
+
+            width = shape.getBounds2D().getWidth();
+            height = shape.getBounds2D().getHeight();
+
+            GeneralPath glyphVector = new GeneralPath();
+
+            glyphVector.append(shape, false);
+
+            PathIterator pathIterator = glyphVector.getPathIterator(null);
+
+            Vertex2D currentPos = new Vertex2D();
+
+            while (!pathIterator.isDone()) {
+                int type = pathIterator.currentSegment(new float[6]);
+                float[] coords = new float[6];
+                pathIterator.currentSegment(coords);
+
+                List<Vertex2D> preVerticies = new ArrayList<>();
+                List<LineType> types = new ArrayList<>();
+
+                switch (type) {
+                    case PathIterator.SEG_MOVETO:
+                        System.out.println("Move to: " + coords[0] + ", " + coords[1]);
+                        currentPos = new Vertex2D(coords[0],coords[1]);
+                        preVerticies.add(new Vertex2D(coords[0],coords[1]));
+                        break;
+                    case PathIterator.SEG_LINETO:
+                        System.out.println("Line to: " + coords[0] + ", " + coords[1]);
+                        m.addTriangle(new Triangle(new Vertex2D(currentPos.x,currentPos.y),new Vertex2D(coords[0],coords[1]),new Vertex2D(currentPos.x,currentPos.y)));
+                        currentPos = new Vertex2D(coords[0],coords[1]);
+                        break;
+                    case PathIterator.SEG_QUADTO:
+                        System.out.println("Quadratic curve to: " + coords[0] + ", " + coords[1] + " with control point " + coords[2] + ", " + coords[3]);
+                        m.addTriangle(new Triangle(new Vertex2D(currentPos.x,currentPos.y),new Vertex2D(coords[0],coords[1]),new Vertex2D(coords[2],coords[3])));
+                        currentPos = new Vertex2D(coords[0],coords[1]);
+                        break;
+                    case PathIterator.SEG_CUBICTO:
+                        System.out.println("Cubic curve to: " + coords[0] + ", " + coords[1] + " with control points " + coords[2] + ", " + coords[3] + " and " + coords[4] + ", " + coords[5]);
+                        break;
+                    case PathIterator.SEG_CLOSE:
+                        System.out.println("Close");
+                        break;
+                }
+
+                pathIterator.next();
+            }
+        } catch (FontFormatException | IOException e) {
+            e.printStackTrace();
+        }
+        Glyph g = new Glyph(m,c,width * 1.2,height * 1.2);
+
+        charMeshes.put(c,g.clone());
+
+        return g.clone();
     }
+}
+
+enum LineType {
+    LINE,
+    BEZIER
 }
